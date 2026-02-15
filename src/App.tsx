@@ -34,7 +34,7 @@ function App() {
   const [aiReply, setAiReply] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
 
-  const backend = "http://localhost:3000";
+  const backend = "https://zenmail-backend-production.up.railway.app";
 
   /* ================= CATEGORY ICONS & COLORS ================= */
 
