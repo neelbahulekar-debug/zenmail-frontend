@@ -33,6 +33,7 @@ function App() {
   const [generatingReply, setGeneratingReply] = useState(false);
   const [aiReply, setAiReply] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   const backend = "https://zenmail-backend-production.up.railway.app";
 
@@ -55,7 +56,7 @@ function App() {
     try {
       console.log("Checking Gmail connection status...");
       const res = await fetch(`${backend}/gmail/status`, {
-        credentials: 'include' // Important: include cookies for session
+        credentials: 'include'
       });
       
       if (!res.ok) {
@@ -72,7 +73,7 @@ function App() {
         setGmailConnected(true);
         setConnectedEmail(data.email);
         await fetchEmails();
-        await fetchSentEmails(); // Fetch sent emails too
+        await fetchSentEmails();
       } else {
         console.log("Gmail not connected");
         setGmailConnected(false);
@@ -91,7 +92,7 @@ function App() {
     try {
       console.log("Fetching emails...");
       const res = await fetch(`${backend}/gmail/emails`, {
-        credentials: 'include' // Important: include cookies for session
+        credentials: 'include'
       });
       const data = await res.json();
 
@@ -124,7 +125,6 @@ function App() {
       console.log(`Classified ${classified.length} emails`);
       setEmails(classified);
 
-      // Auto-select first email in active category if none selected
       const firstInCategory = classified.find(
         (e: Email) => e.category === activeCategory
       );
@@ -178,15 +178,11 @@ function App() {
   /* ================= LOAD ================= */
 
   useEffect(() => {
-    // Check if we just came back from OAuth
     const urlParams = new URLSearchParams(window.location.search);
     const authSuccess = urlParams.get('success');
     
     if (authSuccess === 'true') {
-      // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
-      
-      // Wait a bit for backend to fully process, then check multiple times
       setTimeout(() => checkStatus(), 500);
       setTimeout(() => checkStatus(), 1500);
       setTimeout(() => checkStatus(), 3000);
@@ -205,7 +201,6 @@ function App() {
     } else {
       setSelectedEmail(null);
     }
-    // Clear AI reply when switching emails
     setAiReply("");
   }, [activeCategory, emails, sentEmails]);
 
@@ -246,7 +241,7 @@ function App() {
       }
     } catch (err) {
       console.error("AI reply error:", err);
-      setAiReply(`Error: ${err.message}\n\nPlease check:\n1. Backend server is running on port 3000\n2. GEMINI_API_KEY is set in .env\n3. Check backend console for details`);
+      setAiReply(`Error: ${err.message}\n\nPlease check:\n1. Backend server is running\n2. GEMINI_API_KEY is set in .env\n3. Check backend console for details`);
     } finally {
       setGeneratingReply(false);
     }
@@ -270,15 +265,24 @@ function App() {
           to: selectedEmail.from,
           subject: `Re: ${selectedEmail.subject}`,
           body: aiReply,
-          threadId: selectedEmail.id,
+          // Removed threadId to avoid "entity not found" error
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        alert("✅ Reply sent successfully!");
+        // Show success message
+        setShowSuccessMessage(true);
         setAiReply("");
+        
+        // Hide success message after 5 seconds
+        setTimeout(() => {
+          setShowSuccessMessage(false);
+        }, 5000);
+        
+        // Refresh sent emails
+        fetchSentEmails();
       } else {
         alert("❌ Failed to send reply: " + (data.message || "Unknown error"));
       }
@@ -352,6 +356,49 @@ function App() {
         color: "#1e293b",
       }}
     >
+      {/* SUCCESS MESSAGE OVERLAY */}
+      {showSuccessMessage && (
+        <div
+          style={{
+            position: "fixed",
+            top: 20,
+            right: 20,
+            zIndex: 1000,
+            background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+            color: "white",
+            padding: "20px 30px",
+            borderRadius: 12,
+            boxShadow: "0 10px 40px rgba(16, 185, 129, 0.3)",
+            animation: "slideIn 0.3s ease-out",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <div style={{ fontSize: 32 }}>✅</div>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
+              Email Sent Successfully!
+            </div>
+            <div style={{ fontSize: 13, opacity: 0.9 }}>
+              Your reply has been delivered to {selectedEmail?.from.split('<')[0].trim()}
+            </div>
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
+
       {/* SIDEBAR */}
       <div
         style={{
