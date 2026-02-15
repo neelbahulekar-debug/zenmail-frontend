@@ -175,6 +175,35 @@ function App() {
     window.location.href = `${backend}/auth/google`;
   }
 
+  /* ================= DISCONNECT GMAIL ================= */
+
+  async function disconnectGmail() {
+    try {
+      const response = await fetch(`${backend}/gmail/disconnect`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Clear local state
+        setGmailConnected(false);
+        setConnectedEmail("");
+        setEmails([]);
+        setSentEmails([]);
+        setSelectedEmail(null);
+        setAiReply("");
+        
+        // Refresh the page
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error("Disconnect error:", err);
+      alert("Failed to disconnect. Please try again.");
+    }
+  }
+
   /* ================= LOAD ================= */
 
   useEffect(() => {
@@ -591,6 +620,42 @@ function App() {
             );
           })}
         </div>
+
+        {/* LOGOUT BUTTON */}
+        {gmailConnected && (
+          <div style={{ padding: "16px 24px", marginTop: "auto" }}>
+            <button
+              onClick={disconnectGmail}
+              style={{
+                padding: "12px 16px",
+                width: "100%",
+                background: "rgba(239, 68, 68, 0.15)",
+                color: "white",
+                border: "1px solid rgba(239, 68, 68, 0.3)",
+                borderRadius: 10,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = "rgba(239, 68, 68, 0.25)";
+                e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = "rgba(239, 68, 68, 0.15)";
+                e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)";
+              }}
+            >
+              <span>🚪</span>
+              <span>Logout</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* EMAIL LIST */}
