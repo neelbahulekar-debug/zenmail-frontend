@@ -34,6 +34,7 @@ function App() {
   const [aiReply, setAiReply] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const backend = "https://zenmail-backend-production.up.railway.app";
 
@@ -178,10 +179,6 @@ function App() {
   /* ================= DISCONNECT GMAIL ================= */
 
   async function disconnectGmail() {
-    if (!confirm("Are you sure you want to logout and disconnect your Gmail account?")) {
-      return;
-    }
-
     try {
       const response = await fetch(`${backend}/gmail/disconnect`, {
         method: "POST",
@@ -198,6 +195,7 @@ function App() {
         setSentEmails([]);
         setSelectedEmail(null);
         setAiReply("");
+        setShowLogoutModal(false);
         
         // Clear cookies by setting them to expire
         document.cookie.split(";").forEach((c) => {
@@ -206,7 +204,6 @@ function App() {
             .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
         });
         
-        // Don't reload - just stay on disconnected state
         console.log("✅ Successfully logged out");
       } else {
         alert("Failed to disconnect: " + (data.message || "Unknown error"));
@@ -398,6 +395,138 @@ function App() {
         color: "#1e293b",
       }}
     >
+      {/* LOGOUT CONFIRMATION MODAL */}
+      {showLogoutModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2000,
+            animation: "fadeIn 0.2s ease-out",
+          }}
+          onClick={() => setShowLogoutModal(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: 16,
+              padding: 32,
+              maxWidth: 420,
+              width: "90%",
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+              animation: "scaleIn 0.2s ease-out",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>🚪</div>
+              <h2
+                style={{
+                  margin: "0 0 12px",
+                  fontSize: 24,
+                  fontWeight: 700,
+                  color: "#1e293b",
+                }}
+              >
+                Logout Confirmation
+              </h2>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 15,
+                  color: "#64748b",
+                  lineHeight: 1.6,
+                }}
+              >
+                Are you sure you want to logout and disconnect your Gmail account?
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                marginTop: 32,
+              }}
+            >
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                style={{
+                  flex: 1,
+                  padding: "14px 24px",
+                  background: "#f1f5f9",
+                  color: "#475569",
+                  border: "none",
+                  borderRadius: 10,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = "#e2e8f0";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = "#f1f5f9";
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={disconnectGmail}
+                style={{
+                  flex: 1,
+                  padding: "14px 24px",
+                  background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 10,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  boxShadow: "0 4px 12px rgba(239, 68, 68, 0.3)",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(239, 68, 68, 0.4)";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(239, 68, 68, 0.3)";
+                }}
+              >
+                Yes, Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
+
       {/* SUCCESS MESSAGE OVERLAY */}
       {showSuccessMessage && (
         <div
@@ -638,7 +767,7 @@ function App() {
         {gmailConnected && (
           <div style={{ padding: "16px 24px", marginTop: "auto" }}>
             <button
-              onClick={disconnectGmail}
+              onClick={() => setShowLogoutModal(true)}
               style={{
                 padding: "12px 16px",
                 width: "100%",
