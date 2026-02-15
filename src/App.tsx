@@ -178,6 +178,10 @@ function App() {
   /* ================= DISCONNECT GMAIL ================= */
 
   async function disconnectGmail() {
+    if (!confirm("Are you sure you want to logout and disconnect your Gmail account?")) {
+      return;
+    }
+
     try {
       const response = await fetch(`${backend}/gmail/disconnect`, {
         method: "POST",
@@ -187,7 +191,7 @@ function App() {
       const data = await response.json();
 
       if (data.success) {
-        // Clear local state
+        // Clear local state immediately
         setGmailConnected(false);
         setConnectedEmail("");
         setEmails([]);
@@ -195,8 +199,17 @@ function App() {
         setSelectedEmail(null);
         setAiReply("");
         
-        // Refresh the page
-        window.location.reload();
+        // Clear cookies by setting them to expire
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+        
+        // Don't reload - just stay on disconnected state
+        console.log("✅ Successfully logged out");
+      } else {
+        alert("Failed to disconnect: " + (data.message || "Unknown error"));
       }
     } catch (err) {
       console.error("Disconnect error:", err);
